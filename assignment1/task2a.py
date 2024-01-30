@@ -13,7 +13,10 @@ def pre_process_images(X: np.ndarray):
     assert X.shape[1] == 784,\
         f"X.shape[1]: {X.shape[1]}, should be 784"
     # TODO implement this function (Task 2a)
-    return X
+    X = np.append(X, 1)
+    X_norm = [((data - X.min()) / (X.max()- X.min()))*2 - 1 for data in X]
+    
+    return np.array(X_norm)
 
 
 def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray) -> float:
@@ -46,7 +49,8 @@ class BinaryModel:
             y: output of model with shape [batch size, 1]
         """
         # TODO implement this function (Task 2a)
-        return None
+        weighted_input_vector = np.sum(np.dot(self.w, X))
+        return 1 / (1 + np.exp()**(-weighted_input_vector))
 
     def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> None:
         """
