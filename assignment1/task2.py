@@ -16,13 +16,16 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: BinaryModel) -
         Accuracy (float)
     """
     # TODO Implement this function (Task 2c)
-    accuracy = 0.0
+    output = model.forward(X)
+    predictions = np.where(output > 0.5, 1, 0)
+    correct_predictions = np.sum(predictions == targets)
+    accuracy = correct_predictions / targets.shape[0]
     return accuracy
 
 
 class LogisticTrainer(BaseTrainer):
 
-    def train_step(self, X_batch: np.ndarray, Y_batch: np.ndarray):
+    def train_step(self, X_batch: np.ndarray, Y_batch: np.ndarray) -> float:
         """
         Perform forward, backward and gradient descent step here.
         The function is called once for every batch (see trainer.py) to perform the train step.
@@ -35,7 +38,10 @@ class LogisticTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2b)
-        loss = 0
+        neuron_output = self.model.forward(X_batch)
+        self.model.backward(X_batch, neuron_output, Y_batch)
+        self.model.w = self.model.w - self.learning_rate * self.model.grad
+        loss = cross_entropy_loss(Y_batch, neuron_output)
         return loss
 
     def validation_step(self):
@@ -86,6 +92,7 @@ def main():
         X_train, Y_train, X_val, Y_val,
     )
     train_history, val_history = trainer.train(num_epochs)
+    
 
     # Plot and print everything you want of information
 
@@ -102,6 +109,7 @@ def main():
                     "Training Loss", npoints_to_average=10)
     utils.plot_loss(val_history["loss"], "Validation Loss")
     plt.legend()
+    plt.grid()
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Cross Entropy Loss - Average")
     plt.savefig("task2b_binary_train_loss.png")
@@ -113,6 +121,7 @@ def main():
     utils.plot_loss(val_history["accuracy"], "Validation Accuracy")
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Accuracy")
+    plt.grid()
     plt.legend()
     plt.savefig("task2b_binary_train_accuracy.png")
     plt.show()
@@ -135,6 +144,7 @@ def main():
         train_history_shuffle["loss"], "Training Loss with shuffle", npoints_to_average=10)
     plt.legend()
     plt.xlabel("Number of Training Steps")
+    plt.grid()
     plt.ylabel("Cross Entropy Loss - Average")
     plt.savefig("task2e_train_loss_with_shuffle.png")
     plt.show()
@@ -146,6 +156,7 @@ def main():
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Accuracy")
     plt.legend()
+    plt.grid()
     plt.savefig("task2e_train_accuracy_shuffle_difference.png")
     plt.show()
 

@@ -13,7 +13,6 @@ def pre_process_images(X: np.ndarray):
     assert X.shape[1] == 784,\
         f"X.shape[1]: {X.shape[1]}, should be 784"
     # TODO implement this function (Task 2a)
-    print("Starter på pre_process_images")
     x_max, x_min  = X.max(), X.min()
     def add_bias_and_normalize(row: np.ndarray) -> np.ndarray:
         row = ((row - x_min) / (x_max - x_min)) * 2 - 1
@@ -31,12 +30,9 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray) -> float:
         Cross entropy error (float)
     """
     # TODO implement this function (Task 2a)
-    print("Starter på cross_entropy_loss")
-
     def calculate_cross_entropy(target: int, output: int) -> int:
         return -(target * np.log(output) + (1 - target) * np.log(1 - output))
     cross_entropy_loss: int = np.sum([calculate_cross_entropy(target, output) for target, output in zip(targets, outputs)])
-    print("cross_entropy_loss: ", cross_entropy_loss)
     assert targets.shape == outputs.shape,\
     f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
     return cross_entropy_loss / targets.shape[0]
@@ -58,11 +54,10 @@ class BinaryModel:
             y: output of model with shape [batch size, 1]
         """
         # TODO implement this function (Task 2a)
-        print("Starter på forward")
         #For each row in X, calculate the weighted input vector
-        z = np.dot(X, self.w)  
-        y = 1 / (1 + np.exp(-z))
-        return y
+        sum_weights_and_features = np.dot(X, self.w)  
+        output_value = 1 / (1 + np.exp(-sum_weights_and_features))
+        return output_value
     
     def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> None:
         """
@@ -74,7 +69,6 @@ class BinaryModel:
         """
         # TODO implement this function (Task 2a)
         #For each row in X, calculate the gradient
-        print("Starter på backward")
         N = X.shape[0]
         error = outputs - targets
         self.grad = np.dot(X.T, error) / N 
