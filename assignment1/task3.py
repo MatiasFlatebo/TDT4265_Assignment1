@@ -17,7 +17,14 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: SoftmaxModel) 
         Accuracy (float)
     """
     # TODO: Implement this function (task 3c)
-    accuracy = 0
+    outputs = model.forward(X)
+    
+    predicted_labels = np.argmax(outputs, axis=1)
+    actual_labels = np.argmax(targets, axis=1)
+
+    correct_predictions = np.sum(predicted_labels == actual_labels)
+    accuracy = correct_predictions / len(X)
+
     return accuracy
 
 
@@ -36,7 +43,10 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 3b)
-        loss = 0
+        outputs = self.model.forward(X_batch)
+        self.model.backward(X_batch, outputs, Y_batch)
+        self.model.w = self.model.w - self.learning_rate * self.model.grad
+        loss = cross_entropy_loss(Y_batch, outputs)
         return loss
 
     def validation_step(self):
@@ -100,6 +110,7 @@ def main():
                     "Training Loss", npoints_to_average=10)
     utils.plot_loss(val_history["loss"], "Validation Loss")
     plt.legend()
+    plt.grid()
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Cross Entropy Loss - Average")
     plt.savefig("task3b_softmax_train_loss.png")
@@ -112,6 +123,7 @@ def main():
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Accuracy")
     plt.legend()
+    plt.grid()
     plt.savefig("task3b_softmax_train_accuracy.png")
     plt.show()
 
@@ -125,8 +137,8 @@ def main():
     train_history_reg01, val_history_reg01 = trainer.train(num_epochs)
     # You can finish the rest of task 4 below this point.
 
-    # Plotting of softmax weights (Task 4b)
-    # plt.imsave("task4b_softmax_weight.png", weight, cmap="gray")
+    #Plotting of softmax weights (Task 4b)
+    plt.imsave("task4b_softmax_weight.png", model1.w, cmap="gray")
 
     # Plotting of accuracy for difference values of lambdas (task 4c)
     l2_lambdas = [1, .1, .01, .001]
