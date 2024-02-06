@@ -44,7 +44,7 @@ class SoftmaxModel:
         """
         # TODO implement this function (Task 3a)
         z = np.dot(X, self.w)
-        exp_of_z = np.exp(z)
+        exp_of_z = np.exp(z- np.max(z, axis=1, keepdims=True))
         y = exp_of_z / np.sum(exp_of_z, axis=1, keepdims=True)
         return y
 
@@ -64,11 +64,11 @@ class SoftmaxModel:
         N = X.shape[0]
         error = outputs - targets
         
-        #Uten L2 regularization
+        #Without L2 regularization
         grad_without_reg = np.dot(X.T, error) / N
         
-        #Med L2 regularization
-        grad_with_reg = grad_without_reg + 2* self.l2_reg_lambda * self.w
+        #With L2 regularization
+        grad_with_reg = grad_without_reg + 2 * self.l2_reg_lambda * self.w
 
         self.grad = grad_with_reg    
         

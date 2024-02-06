@@ -129,24 +129,58 @@ def main():
 
     # Train a model with L2 regularization (task 4b)
 
-    model1 = SoftmaxModel(l2_reg_lambda=1.0)
-    trainer = SoftmaxTrainer(
-        model1, learning_rate, batch_size, shuffle_dataset,
-        X_train, Y_train, X_val, Y_val,
-    )
-    train_history_reg01, val_history_reg01 = trainer.train(num_epochs)
-    # You can finish the rest of task 4 below this point.
+    # Plot the weights with L2 reg using lamdba 0.0 and 1.0
 
-    #Plotting of softmax weights (Task 4b)
-    plt.imsave("task4b_softmax_weight.png", model1.w, cmap="gray")
+    def plot_weights(model, title):
+        weight_matrix = model.w[:-1].reshape(28, 28, 10) 
+        figure, axes = plt.subplots(1, 10, figsize=(15, 2))
+        for i, ax in enumerate(axes):
+            ax.imshow(weight_matrix[:, :, i], cmap='gray')
+            ax.axis('off')
+            ax.set_title(f"Digit {i}")
+        plt.suptitle(title)
+        plt.savefig(f"task4b_{title}.png")
+        plt.show()
 
-    # Plotting of accuracy for difference values of lambdas (task 4c)
-    l2_lambdas = [1, .1, .01, .001]
+    train_histories = {}
+    val_histories = {}
+
+
+    lambdas = [1, 0.1, 0.01, 0.001, 0.0]
+    models = [SoftmaxModel(l2_reg_lambda=i) for i in lambdas]
+
+    for i, model in enumerate(models):
+        trainer = SoftmaxTrainer(
+            model, learning_rate, batch_size, shuffle_dataset,
+            X_train, Y_train, X_val, Y_val,
+        )
+        train_history, val_history = trainer.train(num_epochs)
+        train_histories[lambdas[i]] = train_history
+        val_histories[lambdas[i]] = val_history
+
+    # Plot weights "density" for each digit
+    plot_weights(models[-1], "Weights without regularization")
+    plot_weights(models[0], "Weights with full regularization")
+
+    for lambda_value in lambdas:
+        utils.plot_loss(val_histories[lambda_value]["accuracy"], f"Validation Accuracy (lambda={lambda_value})")
+    plt.ylim([0.75, 0.95])
+    plt.xlabel("Number of Training Steps")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid()
     plt.savefig("task4c_l2_reg_accuracy.png")
+    plt.show()
 
-    # Task 4d - Plotting of the l2 norm for each weight
-
-    plt.savefig("task4d_l2_reg_norms.png")
+    # Plotting of the l2 norm for each weight (Task 4e)
+    l2_norms = [np.linalg.norm(model.w) for model in models]
+    plt.plot(lambdas, l2_norms, '-o')
+    plt.xlabel("Lambda")
+    plt.ylabel("L2 Norm of Weights")
+    plt.title("L2 Norm of Weights vs. Lambda")
+    plt.grid()
+    plt.savefig("task4d_l2_norms.png")
+    plt.show()
 
 
 if __name__ == "__main__":
