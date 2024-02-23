@@ -19,7 +19,14 @@ def calculate_accuracy(
         Accuracy (float)
     """
     # TODO: Implement this function (copy from last assignment)
-    accuracy = 0
+    outputs = model.forward(X)
+
+    predicted_labels = np.argmax(outputs, axis=1)
+    actual_labels = np.argmax(targets, axis=1)
+
+    correct_predictions = np.sum(predicted_labels == actual_labels)
+    accuracy = correct_predictions / len(X)
+
     return accuracy
 
 
@@ -30,7 +37,7 @@ class SoftmaxTrainer(BaseTrainer):
         momentum_gamma: float,
         use_momentum: bool,  # Task 3d hyperparmeter
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
 
@@ -52,7 +59,17 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2c)
-        loss = 0
+        outputs = self.model.forward(X_batch)
+
+        self.model.backward(X_batch, outputs, Y_batch)
+        # Update weights
+        for i in range(len(self.model.ws)):
+            if self.use_momentum:
+                self.previous_grads[i] = self.momentum_gamma * self.previous_grads[i] + self.learning_rate * self.model.grads[i]
+                self.model.ws[i] -= self.previous_grads[i]
+            else:
+                self.model.ws[i] -= self.learning_rate * self.model.grads[i]
+        loss = cross_entropy_loss(Y_batch, outputs)
 
         return loss
 
@@ -76,25 +93,35 @@ class SoftmaxTrainer(BaseTrainer):
         accuracy_val = calculate_accuracy(self.X_val, self.Y_val, self.model)
         return loss, accuracy_train, accuracy_val
 
+    def get_number_of_params(self):
+        """
+        Returns the total number of parameters in the model
+        """
+        num_params = 785 * self.model.neurons_per_layer[0]
+        for i in range(len(self.model.neurons_per_layer) - 1):
+            num_params += (self.model.neurons_per_layer[i] + 1) * self.model.neurons_per_layer[i + 1]
+        return num_params
+            
+
 
 def main():
     # hyperparameters DO NOT CHANGE IF NOT SPECIFIED IN ASSIGNMENT TEXT
     num_epochs = 50
-    learning_rate = 0.1
+    learning_rate = 0.02
     batch_size = 32
-    neurons_per_layer = [64, 10]
+    neurons_per_layer = [59, 59, 10]
     momentum_gamma = 0.9  # Task 3 hyperparameter
     shuffle_data = True
 
     # Settings for task 2 and 3. Keep all to false for task 2.
-    use_improved_sigmoid = False
-    use_improved_weight_init = False
-    use_momentum = False
+    use_improved_sigmoid = True
+    use_improved_weight_init = True
+    use_momentum = True
     use_relu = False
 
     # Load dataset
     X_train, Y_train, X_val, Y_val = utils.load_full_mnist()
-    x_mean, x_std  = np.mean(X_train), np.std(X_train)
+    x_mean, x_std = np.mean(X_train), np.std(X_train)
     X_train = pre_process_images(X_train, x_mean, x_std)
     X_val = pre_process_images(X_val, x_mean, x_std)
     Y_train = one_hot_encode(Y_train, 10)
@@ -116,6 +143,12 @@ def main():
         X_val,
         Y_val,
     )
+    # Initilaze weights between -1 and 1
+
+
+    # Printing number of paramters in the model
+    print("Number of parameters in model:", trainer.get_number_of_params())
+
     train_history, val_history = trainer.train(num_epochs)
     print(f"Mean: {x_mean} and standard deviation: {x_std}")
     print(

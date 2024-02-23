@@ -12,14 +12,15 @@ def main():
         f"Expected the vector to be [0,0,0,1,0,0,0,0,0,0], but got {Y}"
 
     X_train, Y_train, *_ = utils.load_full_mnist()
-    X_train = pre_process_images(X_train)
+    x_mean, x_std = np.mean(X_train), np.std(X_train)
+    X_train = pre_process_images(X_train, x_mean, x_std)
     Y_train = one_hot_encode(Y_train, 10)
     assert X_train.shape[1] == 785, \
         f"Expected X_train to have 785 elements per image. Shape was: {X_train.shape}"
 
     # Modify your network here
     neurons_per_layer = [64, 64, 10]
-    use_improved_sigmoid = True
+    use_improved_sigmoid = False
     use_improved_weight_init = True
     use_relu = False
     model = SoftmaxModel(
