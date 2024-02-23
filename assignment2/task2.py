@@ -94,8 +94,9 @@ def main():
 
     # Load dataset
     X_train, Y_train, X_val, Y_val = utils.load_full_mnist()
-    X_train = pre_process_images(X_train)
-    X_val = pre_process_images(X_val)
+    x_mean, x_std  = np.mean(X_train), np.std(X_train)
+    X_train = pre_process_images(X_train, x_mean, x_std)
+    X_val = pre_process_images(X_val, x_mean, x_std)
     Y_train = one_hot_encode(Y_train, 10)
     Y_val = one_hot_encode(Y_val, 10)
     # Hyperparameters
@@ -116,7 +117,7 @@ def main():
         Y_val,
     )
     train_history, val_history = trainer.train(num_epochs)
-
+    print(f"Mean: {x_mean} and standard deviation: {x_std}")
     print(
         "Final Train Cross Entropy Loss:",
         cross_entropy_loss(Y_train, model.forward(X_train)),

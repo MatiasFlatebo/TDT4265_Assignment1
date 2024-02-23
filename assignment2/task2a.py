@@ -5,16 +5,22 @@ import typing
 np.random.seed(1)
 
 
-def pre_process_images(X: np.ndarray):
+def pre_process_images(X: np.ndarray, x_mean: float, x_std: float):
     """
     Args:
         X: images of shape [batch size, 784] in the range (0, 255)
     Returns:
         X: images of shape [batch size, 785] normalized as described in task2a
     """
-    assert X.shape[1] == 784, f"X.shape[1]: {X.shape[1]}, should be 784"
+    assert X.shape[1] == 784,\
+        f"X.shape[1]: {X.shape[1]}, should be 784"
     # TODO implement this function (Task 2a)
-    return X
+    X_norm = (X - x_mean) / x_std
+    
+    new_column = np.ones((X_norm.shape[0], 1))
+    X_norm = np.hstack((X_norm, new_column))
+    
+    return X_norm
 
 
 def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
@@ -25,11 +31,14 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
     Returns:
         Cross entropy error (float)
     """
-    assert (
-        targets.shape == outputs.shape
-    ), f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
-    # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    # TODO implement this function (Task 3a)
+    def calculate_cross_entropy(target: int, output: int) -> int:
+        return -(target * np.log(output))
+    cross_entropy_loss: int = np.sum([calculate_cross_entropy(target, output) for target, output in zip(targets, outputs)])
+    assert targets.shape == outputs.shape,\
+        f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
+    
+    return cross_entropy_loss / targets.shape[0]
 
 
 class SoftmaxModel:
@@ -46,7 +55,7 @@ class SoftmaxModel:
             1
         )  # Always reset random seed before weight init to get comparable results.
         # Define number of input nodes
-        self.I = None
+        self.I = 785
         self.use_improved_sigmoid = use_improved_sigmoid
         self.use_relu = use_relu
         self.use_improved_weight_init = use_improved_weight_init
@@ -67,7 +76,7 @@ class SoftmaxModel:
             prev = size
         self.grads = [None for i in range(len(self.ws))]
 
-    def forward(self, X: np.ndarray) -> np.ndarray:
+    def forward(self, X: np.ndarray, layer_idx: int) -> np.ndarray:
         """
         Args:
             X: images of shape [batch size, 785]
@@ -77,9 +86,12 @@ class SoftmaxModel:
         # TODO implement this function (Task 2b)
         # HINT: For performing the backward pass, you can save intermediate activations in variables in the forward pass.
         # such as self.hidden_layer_output = ...
-        return None
+        z = np.dot(X, self.ws[layer_idx])
+        exp_of_z = np.exp(z- np.max(z, axis=1, keepdims=True))
+        y = exp_of_z / np.sum(exp_of_z, axis=1, keepdims=True)
+        return y
 
-    def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> None:
+    def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray, layer_idx: int) -> None:
         """
         Computes the gradient and saves it to the variable self.grad
 
@@ -89,16 +101,23 @@ class SoftmaxModel:
             targets: labels/targets of each image of shape: [batch size, num_classes]
         """
         # TODO implement this function (Task 2b)
-        assert (
-            targets.shape == outputs.shape
-        ), f"Output shape: {outputs.shape}, targets: {targets.shape}"
-        # A list of gradients.
-        # For example, self.grads[0] will be the gradient for the first hidden layer
-        self.grads = []
-        for grad, w in zip(self.grads, self.ws):
-            assert (
-                grad.shape == w.shape
-            ), f"Expected the same shape. Grad shape: {grad.shape}, w: {w.shape}."
+        
+        N = X.shape[0]
+        error = outputs - targets
+        
+        #Without L2 regularization
+        grad_without_reg = np.dot(X.T, error) / N
+        
+        #With L2 regularization
+        #grad_with_reg = grad_without_reg + 2 * self.l2_reg_lambda * self.w
+
+        self.grads = grad_without_reg[layer_idx]    
+        
+        assert targets.shape == outputs.shape,\
+            f"Output shape: {outputs.shape}, targets: {targets.shape}"
+        #self.grad = np.zeros_like(self.w)
+        assert self.grad.shape == self.w.shape,\
+            f"Grad shape: {self.grad.shape}, w: {self.w.shape}"
 
     def zero_grad(self) -> None:
         self.grads = [None for i in range(len(self.ws))]
@@ -112,8 +131,8 @@ def one_hot_encode(Y: np.ndarray, num_classes: int):
     Returns:
         Y: shape [Num examples, num classes]
     """
-    # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    one_hot_encoded = np.eye(num_classes)[np.squeeze(Y, axis=1)]
+    return one_hot_encoded
 
 
 def gradient_approximation_test(model: SoftmaxModel, X: np.ndarray, Y: np.ndarray):
@@ -132,16 +151,16 @@ def gradient_approximation_test(model: SoftmaxModel, X: np.ndarray, Y: np.ndarra
             for j in range(w.shape[1]):
                 orig = model.ws[layer_idx][i, j].copy()
                 model.ws[layer_idx][i, j] = orig + epsilon
-                logits = model.forward(X)
+                logits = model.forward(X, layer_idx)
                 cost1 = cross_entropy_loss(Y, logits)
                 model.ws[layer_idx][i, j] = orig - epsilon
-                logits = model.forward(X)
+                logits = model.forward(X, layer_idx)
                 cost2 = cross_entropy_loss(Y, logits)
                 gradient_approximation = (cost1 - cost2) / (2 * epsilon)
                 model.ws[layer_idx][i, j] = orig
                 # Actual gradient
-                logits = model.forward(X)
-                model.backward(X, logits, Y)
+                logits = model.forward(X, layer_idx)
+                model.backward(X, logits, Y, layer_idx)
                 difference = gradient_approximation - \
                     model.grads[layer_idx][i, j]
                 assert abs(difference) <= epsilon**1, (
@@ -163,7 +182,8 @@ def main():
     ), f"Expected the vector to be [0,0,0,1,0,0,0,0,0,0], but got {Y}"
 
     X_train, Y_train, *_ = utils.load_full_mnist()
-    X_train = pre_process_images(X_train)
+    x_mean, x_std  = np.mean(X_train), np.std(X_train)
+    X_train = pre_process_images(X_train, x_mean, x_std)
     Y_train = one_hot_encode(Y_train, 10)
     assert (
         X_train.shape[1] == 785
