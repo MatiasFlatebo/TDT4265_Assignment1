@@ -26,17 +26,40 @@ class ExampleModel(nn.Module):
                 kernel_size=5,
                 stride=1,
                 padding=2,
-            )
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(
+                in_channels=num_filters,
+                out_channels=128, #64
+                kernel_size=5,
+                stride=1,
+                padding=2,
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(
+                in_channels=128,
+                out_channels=256, #128
+                kernel_size=5,
+                stride=1,
+                padding=2,
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
-        self.num_output_features = 32 * 32 * 32
+        self.num_output_features = 256 * 4 * 4
         # Initialize our last fully connected layer
         # Inputs all extracted features from the convolutional layers
         # Outputs num_classes predictions, 1 for each class.
         # There is no need for softmax activation function, as this is
         # included with nn.CrossEntropyLoss
         self.classifier = nn.Sequential(
-            nn.Linear(self.num_output_features, num_classes),
+            nn.Flatten(),
+            nn.Linear(self.num_output_features, 128),
+            nn.ReLU(),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x):
@@ -48,7 +71,11 @@ class ExampleModel(nn.Module):
         # TODO: Implement this function (Task  2a)
         batch_size = x.shape[0]
         out = x
+
+        out = self.feature_extractor(out).view(batch_size, -1)
+        out = self.classifier(out)
         expected_shape = (batch_size, self.num_classes)
+
         assert out.shape == (
             batch_size,
             self.num_classes,
@@ -89,8 +116,9 @@ def main():
     early_stop_count = 4
     dataloaders = load_cifar10(batch_size)
     model = ExampleModel(image_channels=3, num_classes=10)
+    optimizer = "sgd" # "sgd" or "adam"
     trainer = Trainer(
-        batch_size, learning_rate, early_stop_count, epochs, model, dataloaders
+        batch_size, learning_rate, early_stop_count, epochs, model, dataloaders, optimizer
     )
     trainer.train()
     create_plots(trainer, "task2")

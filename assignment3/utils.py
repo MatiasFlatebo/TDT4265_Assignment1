@@ -84,7 +84,7 @@ def load_best_checkpoint(directory: pathlib.Path):
     return torch.load(directory.joinpath("best.ckpt"))
 
 
-def plot_loss(
+def plot_loss_org(
     loss_dict: dict, label: str = None, npoints_to_average=1, plot_variance=True
 ):
     """
@@ -115,6 +115,38 @@ def plot_loss(
         steps,
         np.array(mean_loss) - np.array(loss_std),
         np.array(mean_loss) + loss_std,
+        alpha=0.2,
+        label=f"{label} variance over {npoints_to_average} steps",
+    )
+
+def plot_loss(
+    loss_dict: dict, label: str = None, npoints_to_average=1, plot_variance=True
+):
+    global_steps = list(loss_dict.keys())
+    
+    # Convert values to numpy arrays if they are torch tensors
+    loss = [value.cpu().numpy() if torch.is_tensor(value) else value for value in loss_dict.values()]
+
+    if npoints_to_average == 1 or not plot_variance:
+        plt.plot(global_steps, loss, label=label)
+        return
+
+    npoints_to_average = max(npoints_to_average, 1)  # Ensure npoints_to_average is at least 1
+    num_points = len(loss) // npoints_to_average
+    mean_loss = []
+    loss_std = []
+    steps = []
+    for i in range(num_points):
+        points = loss[i * npoints_to_average : (i + 1) * npoints_to_average]
+        step = global_steps[i * npoints_to_average + npoints_to_average // 2]
+        mean_loss.append(np.mean(points))
+        loss_std.append(np.std(points))
+        steps.append(step)
+    plt.plot(steps, mean_loss, label=f"{label} (mean over {npoints_to_average} steps)")
+    plt.fill_between(
+        steps,
+        np.array(mean_loss) - np.array(loss_std),
+        np.array(mean_loss) + np.array(loss_std),
         alpha=0.2,
         label=f"{label} variance over {npoints_to_average} steps",
     )

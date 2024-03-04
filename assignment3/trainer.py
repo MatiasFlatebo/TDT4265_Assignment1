@@ -20,7 +20,7 @@ def compute_loss_and_accuracy(
     Returns:
         [average_loss, accuracy]: both scalar.
     """
-    average_loss = 0
+    loss = 0
     accuracy = 0
     # TODO: Implement this function (Task  2a)
     with torch.no_grad():
@@ -30,11 +30,13 @@ def compute_loss_and_accuracy(
             Y_batch = utils.to_cuda(Y_batch)
             # Forward pass the images through our model
             output_probs = model(X_batch)
-
             # Compute Loss and Accuracy
-
+            loss += loss_criterion(output_probs, Y_batch).item()
             # Predicted class is the max index over the column dimension
-    return average_loss, accuracy
+            predictions = torch.argmax(output_probs, dim=1)
+            accuracy += (predictions == Y_batch).sum().item() / len(Y_batch)
+
+    return loss/len(dataloader), accuracy/len(dataloader)
 
 
 class Trainer:
@@ -45,7 +47,8 @@ class Trainer:
                  early_stop_count: int,
                  epochs: int,
                  model: torch.nn.Module,
-                 dataloaders: typing.List[torch.utils.data.DataLoader]):
+                 dataloaders: typing.List[torch.utils.data.DataLoader],
+                optimizer: str):
         """
             Initialize our trainer class.
         """
@@ -63,8 +66,12 @@ class Trainer:
         print(self.model)
 
         # Define our optimizer. SGD = Stochastich Gradient Descent
-        self.optimizer = torch.optim.SGD(self.model.parameters(),
-                                         self.learning_rate)
+        if optimizer == "sgd":
+            self.optimizer = torch.optim.SGD(self.model.parameters(),
+                                            self.learning_rate)
+        else:
+            self.optimizer = torch.optim.Adam(self.model.parameters(),
+                                            self.learning_rate)
 
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = dataloaders
@@ -92,6 +99,9 @@ class Trainer:
             Train, validation and test.
         """
         self.model.eval()
+        train_loss, train_acc = compute_loss_and_accuracy(
+            self.dataloader_train, self.model, self.loss_criterion
+        )
         validation_loss, validation_acc = compute_loss_and_accuracy(
             self.dataloader_val, self.model, self.loss_criterion
         )
@@ -102,6 +112,8 @@ class Trainer:
             f"Epoch: {self.epoch:>1}",
             f"Batches per seconds: {self.global_step / used_time:.2f}",
             f"Global step: {self.global_step:>6}",
+            f"Train loss: {train_loss:.2f}",
+            f"Train Accuracy: {train_acc:.3f}",
             f"Validation Loss: {validation_loss:.2f}",
             f"Validation Accuracy: {validation_acc:.3f}",
             sep=", ")
