@@ -1,5 +1,6 @@
 from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
+from torchvision.transforms import v2
 import torch
 import typing
 import numpy as np
@@ -21,8 +22,15 @@ def load_cifar10(batch_size: int, validation_fraction: float = 0.1
                  ) -> typing.List[torch.utils.data.DataLoader]:
     # Note that transform train will apply the same transform for
     # validation!
+
+    # Apply several functions here to augment the data
     transform_train = transforms.Compose([
         transforms.ToTensor(),
+        # Things we have added
+        #transforms.Lambda(random_crop_images),
+        #transforms.Lambda(random_flip_images),
+        transforms.Lambda(random_rotate_images),
+        transforms.Lambda(random_color_jitter),
         transforms.Normalize(mean, std),
     ])
     transform_test = transforms.Compose([
@@ -66,5 +74,22 @@ def load_cifar10(batch_size: int, validation_fraction: float = 0.1
 
     return dataloader_train, dataloader_val, dataloader_test
 
+
+# Crops the image
+def random_crop_images(image: torch.Tensor) -> torch.Tensor:
+    transform = v2.RandomCrop(size=(32, 32), padding=2)
+    return transform(image)
+
+def random_flip_images(image: torch.Tensor) -> torch.Tensor:
+    transform = v2.RandomHorizontalFlip(p=0.3)
+    return transform(image)
+
+def random_rotate_images(image: torch.Tensor) -> torch.Tensor:
+    transform = v2.RandomRotation(degrees=15)
+    return transform(image)
+
+def random_color_jitter(image: torch.Tensor) -> torch.Tensor:
+    transform = v2.ColorJitter(brightness=0.5, contrast=0.5)
+    return transform(image)
 
 

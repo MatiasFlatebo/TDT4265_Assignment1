@@ -4,6 +4,7 @@ import utils
 from torch import nn
 from dataloaders import load_cifar10
 from trainer import Trainer
+from trainer import compute_loss_and_accuracy
 
 
 class ExampleModel(nn.Module):
@@ -31,7 +32,7 @@ class ExampleModel(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(
                 in_channels=num_filters,
-                out_channels=128, #64
+                out_channels=64, #64
                 kernel_size=5,
                 stride=1,
                 padding=2,
@@ -39,7 +40,7 @@ class ExampleModel(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(
-                in_channels=128,
+                in_channels=64,
                 out_channels=256, #128
                 kernel_size=5,
                 stride=1,
@@ -96,6 +97,7 @@ def create_plots(trainer: Trainer, name: str):
     utils.plot_loss(trainer.validation_history["loss"], label="Validation loss")
     plt.legend()
     plt.subplot(1, 2, 2)
+    plt.grid(True)
     plt.title("Accuracy")
     utils.plot_loss(trainer.validation_history["accuracy"], label="Validation Accuracy")
     plt.legend()
@@ -122,6 +124,12 @@ def main():
     )
     trainer.train()
     create_plots(trainer, "task2")
+    trainer.load_best_model()
+    dataloader_test = dataloaders[2]  
+    test_loss, test_accuracy = compute_loss_and_accuracy(dataloader_test, trainer.model, trainer.loss_criterion)
+    print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_accuracy:.4f}")
+    with open("task3_test_accuracy.txt", "a") as fp:
+        fp.write(f"Test accuracy:  {test_accuracy:.4f}")
 
 
 if __name__ == "__main__":
