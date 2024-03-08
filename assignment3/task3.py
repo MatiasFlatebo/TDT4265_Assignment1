@@ -24,33 +24,36 @@ class ExampleModel(nn.Module):
             nn.Conv2d(
                 in_channels=image_channels,
                 out_channels=num_filters,
-                kernel_size=5,
+                kernel_size=3,
                 stride=1,
                 padding=2,
             ),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(
                 in_channels=num_filters,
-                out_channels=64, #64
-                kernel_size=5,
+                out_channels=128,  # 64
+                kernel_size=4,
                 stride=1,
                 padding=2,
             ),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(
-                in_channels=64,
-                out_channels=128, #128
+                in_channels=128,
+                out_channels=256,  # 128
                 kernel_size=5,
                 stride=1,
                 padding=2,
             ),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
-        self.num_output_features = 128 * 4 * 4
+        self.num_output_features = 256 * 4 * 4
         # Initialize our last fully connected layer
         # Inputs all extracted features from the convolutional layers
         # Outputs num_classes predictions, 1 for each class.
@@ -58,9 +61,10 @@ class ExampleModel(nn.Module):
         # included with nn.CrossEntropyLoss
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.num_output_features, 64),
+            nn.Linear(self.num_output_features, 128),
             nn.ReLU(),
-            nn.Linear(64, num_classes),
+            nn.Dropout(0.3),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x):
@@ -105,8 +109,6 @@ def create_plots(trainer: Trainer, name: str):
     plt.show()
 
 
-
-
 def main():
     # Set the random generator seed (parameters, shuffling etc).
     # You can try to change this and check if you still get the same result!
@@ -118,18 +120,26 @@ def main():
     early_stop_count = 4
     dataloaders = load_cifar10(batch_size)
     model = ExampleModel(image_channels=3, num_classes=10)
-    optimizer = "sgd" # "sgd" or "adam"
+    optimizer = "sgd"  # "sgd" or "adam"
     trainer = Trainer(
-        batch_size, learning_rate, early_stop_count, epochs, model, dataloaders, optimizer
+        batch_size,
+        learning_rate,
+        early_stop_count,
+        epochs,
+        model,
+        dataloaders,
+        optimizer,
     )
     trainer.train()
     create_plots(trainer, "task2")
     trainer.load_best_model()
-    dataloader_test = dataloaders[2]  
-    test_loss, test_accuracy = compute_loss_and_accuracy(dataloader_test, trainer.model, trainer.loss_criterion)
+    dataloader_test = dataloaders[2]
+    test_loss, test_accuracy = compute_loss_and_accuracy(
+        dataloader_test, trainer.model, trainer.loss_criterion
+    )
     print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_accuracy:.4f}")
     with open("task3_test_accuracy.txt", "a") as fp:
-        fp.write(f"Test accuracy:  {test_accuracy:.4f}")
+        fp.write(f"Test accuracy:  {test_accuracy:.4f}\n")
 
 
 if __name__ == "__main__":

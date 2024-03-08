@@ -9,7 +9,8 @@ np.random.seed(0)
 
 mean = (0.5, 0.5, 0.5)
 std = (.25, .25, .25)
-
+# mean = (0.485, 0.456, 0.406) # Task 4
+# std = (0.229, 0.224, 0.225) # Task 4
 
 def get_data_dir():
     server_dir = pathlib.Path("/work/datasets/cifar10")
@@ -29,12 +30,14 @@ def load_cifar10(batch_size: int, validation_fraction: float = 0.1
         # Things we have added
         #transforms.Lambda(random_crop_images),
         #transforms.Lambda(random_flip_images),
-        transforms.Lambda(random_rotate_images),
-        transforms.Lambda(random_color_jitter),
+        transforms.Lambda(random_rotate_images), # For task 3
+        transforms.Lambda(random_color_jitter), # For task 3
+        #transforms.Resize((112, 112)), # For task 4
         transforms.Normalize(mean, std),
     ])
     transform_test = transforms.Compose([
         transforms.ToTensor(),
+        #transforms.Resize((112, 112)),
         transforms.Normalize(mean, std)
     ])
     data_train = datasets.CIFAR10(get_data_dir(),
