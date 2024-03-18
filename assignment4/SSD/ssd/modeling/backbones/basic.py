@@ -1,5 +1,6 @@
 import torch
 from typing import Tuple, List
+from torch import nn
 
 
 class BasicModel(torch.nn.Module):
@@ -20,6 +21,66 @@ class BasicModel(torch.nn.Module):
         super().__init__()
         self.out_channels = output_channels
         self.output_feature_shape = output_feature_sizes
+        kernel_size = 3
+        padding = 1
+        pool_kernel_size = 2
+        pool_stride = 2
+
+        self.feature_extractor = nn.Sequential(
+            nn.Conv2d(in_channels=image_channels, output_channels=32, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=pool_kernel_size, stride=pool_stride),
+            nn.Conv2d(in_channels=32, output_channels=64, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=pool_kernel_size, stride=pool_stride),
+            nn.Conv2d(in_channels=64, output_channels=64, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, output_channels=self.out_channels[0], kernel_size=kernel_size, stride=2, padding=padding),
+            nn.ReLU(),
+        )
+
+        self.feature_extractor_2 = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(in_channels=self.out_channels[0], output_channels=128, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, output_channels=self.out_channels[1], kernel_size=kernel_size, stride=2, padding=padding),
+            nn.ReLU(),
+        )
+
+        self.feature_extractor_3 = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(in_channels=self.out_channels[1], output_channels=256, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, output_channels=self.out_channels[2], kernel_size=kernel_size, stride=2, padding=padding),
+            nn.ReLU(),
+        )
+
+        self.feature_extractor_4 = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(in_channels=self.out_channels[2], output_channels=128, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, output_channels=self.out_channels[3], kernel_size=kernel_size, stride=2, padding=padding),
+            nn.ReLU(),
+        )
+
+        self.feature_extractor_5 = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(in_channels=self.out_channels[3], output_channels=128, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, output_channels=self.out_channels[4], kernel_size=kernel_size, stride=2, padding=padding),
+            nn.ReLU(),
+        )
+
+        self.feature_extractor_6 = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(in_channels=self.out_channels[4], output_channels=128, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, output_channels=self.out_channels[5], kernel_size=kernel_size, stride=1, padding=0),
+            nn.ReLU(),
+        )
+
+
+
 
     def forward(self, x):
         """
