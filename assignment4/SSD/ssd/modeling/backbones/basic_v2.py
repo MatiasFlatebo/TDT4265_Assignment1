@@ -81,7 +81,6 @@ class BasicModel(torch.nn.Module):
 
 
 
-
     def forward(self, x):
         """
         The forward functiom should output features with shape:
@@ -96,24 +95,6 @@ class BasicModel(torch.nn.Module):
             shape(-1, output_channels[0], 38, 38),
         """
         out_features = []
-
-        x = self.feature_extractor(x)
-        out_features.append(x)
-        
-        x = self.feature_extractor_2(x)
-        out_features.append(x)
-        
-        x = self.feature_extractor_3(x)
-        out_features.append(x)
-        
-        x = self.feature_extractor_4(x)
-        out_features.append(x)
-        
-        x = self.feature_extractor_5(x)
-        out_features.append(x)
-        
-        x = self.feature_extractor_6(x)
-        out_features.append(x)
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]
